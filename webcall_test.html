@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestoVoice - Web Call Test</title>
+    <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .call-button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            min-width: 200px;
+        }
+        
+        .call-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .call-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.idle {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .info p {
+            margin: 10px 0;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .backend-url {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        .transcript {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .transcript .user {
+            color: #007bff;
+        }
+        
+        .transcript .assistant {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🍽️</div>
+        <h1>RestoVoice Web Call Test</h1>
+        
+        <p style="color: #666; margin: 20px 0;">
+            📞 A Vapi call button will appear below automatically<br>
+            🧪 Or test the webhook directly with the button
+        </p>
+        
+        <button id="webhookTestButton" class="call-button" onclick="testWebhook()" style="background: linear-gradient(45deg, #007bff, #0056b3);">
+            🧪 Test Webhook Directly
+        </button>
+        
+        <div id="status" class="status idle">
+            Ready to connect to your backend
+        </div>
+        
+        <div id="transcript" class="transcript" style="display: none;">
+            <strong>Conversation:</strong><br>
+            <div id="transcriptContent"></div>
+        </div>
+        
+        <div class="info">
+            <h3>🔧 Configuration</h3>
+            <p><strong>Backend URL:</strong></p>
+            <div class="backend-url">https://restovoice.loca.lt/v1/vapi/webhooks/vapi</div>
+            
+            <p><strong>Assistant:</strong> RestoVoice Reservation Agent</p>
+            <p><strong>Expected Behavior:</strong> AI will greet first and help with restaurant reservations</p>
+            
+            <h3>📋 How to Test:</h3>
+            <p>1. Click "Start Web Call" button</p>
+            <p>2. Allow microphone access when prompted</p>
+            <p>3. AI will greet: "Hi! Thank you for calling RestoVoice..."</p>
+            <p>4. Try saying: "I'd like to make a reservation for 2 people tonight at 7 PM"</p>
+        </div>
+    </div>
+
+    <script>
+        var vapiInstance = null;
+        // const assistant = "a0451c17-f06f-4283-9398-f7ad09295538"; // REMOVED - Use serverUrl instead
+        const apiKey = "84165de1-a15e-482d-8bd0-f75257dcc31a"; // Your Vapi public API key
+        const buttonConfig = {
+            position: "center",
+            buttonColor: "#4CAF50",
+            title: "Call RestoVoice"
+        };
+
+        // Fallback: Create manual call button if SDK doesn't work
+        function createManualCallButton() {
+            const container = document.querySelector('.container');
+            const button = document.createElement('button');
+            button.className = 'call-button';
+            button.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
+            button.textContent = '📞 Start Web Call';
+            button.style.marginTop = '20px';
+            container.appendChild(button);
+        }
+
+        (function (d, t) {
+            var g = document.createElement(t),
+              s = d.getElementsByTagName(t)[0];
+            g.src =
+              "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+            g.defer = true;
+            g.async = true;
+            s.parentNode.insertBefore(g, s);
+
+            g.onload = function () {
+                console.log('✅ Vapi SDK loaded');
+                updateStatus('idle', '✅ Vapi SDK loaded');
+                
+                // Try to initialize SDK
+                try {
+                    if (apiKey && apiKey !== "YOUR_PUBLIC_API_KEY") {
+                        // Start call with Vapi
+                        vapiInstance = window.vapiSDK.run({
+                            apiKey: apiKey,
+                            assistant: {
+                                serverUrl: "https://restovoice.loca.lt/v1/vapi/webhooks/vapi"
+                            },
+                            config: buttonConfig,
+                        });
+                        console.log('✅ Vapi SDK initialized with API key');
+                    } else {
+                        console.log('⚠️ No API key provided, using manual button');
+                        createManualCallButton();
+                        updateStatus('idle', '⚠️ Add API key or use manual button');
+                    }
+                } catch (error) {
+                    console.error('❌ Vapi SDK failed:', error);
+                    createManualCallButton();
+                    updateStatus('error', '❌ SDK failed - use manual button');
+                }
+                
+                // Set up event listeners if SDK works
+                if (vapiInstance) {
+                    vapiInstance.on('call-start', () => {
+                        updateStatus('connected', '📞 Call connected! AI is speaking...');
+                        document.getElementById('transcript').style.display = 'block';
+                        addTranscript('system', 'Call started');
+                    });
+                    
+                    vapiInstance.on('call-end', () => {
+                        updateStatus('idle', 'Call ended. Ready to connect again.');
+                        addTranscript('system', 'Call ended');
+                        isCallActive = false;
+                        updateCallButton();
+                    });
+                    
+                    vapiInstance.on('message', (message) => {
+                        console.log('Message received:', message);
+                        if (message.type === 'transcript' && message.transcriptType === 'final') {
+                            addTranscript(message.role, message.transcript);
+                        }
+                    });
+                    
+                    vapiInstance.on('error', (error) => {
+                        console.error('Vapi error:', error);
+                        updateStatus('error', `❌ Error: ${error.message}`);
+                        isCallActive = false;
+                        updateCallButton();
+                    });
+                }
+            };
+            
+            // Fallback if SDK doesn't load
+            g.onerror = function() {
+                console.error('❌ Vapi SDK failed to load');
+                createManualCallButton();
+                updateStatus('error', '❌ SDK failed to load - use manual button');
+            };
+        })(document, "script");
+        
+        let isCallActive = false;
+        
+        function toggleCall() {
+            // Vapi SDK handles call automatically when button is clicked
+            console.log('Vapi SDK manages calls automatically');
+            updateStatus('connecting', '🔄 Use the Vapi call button that appears...');
+        }
+        
+        async function startManualCall() {
+            updateStatus('connecting', '🔄 Starting manual voice call...');
+            
+            try {
+                // Create a web call directly using Vapi API
+                const response = await fetch('https://api.vapi.ai/call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + prompt('Enter your Vapi API key (from .env file):')
+                    },
+                    body: JSON.stringify({
+                        assistant: {
+                            name: "RestoVoice Reservation Agent",
+                            firstMessage: "Hi! Thank you for calling RestoVoice. I'm here to help you make a restaurant reservation. How can I help you today?",
+                            firstMessageMode: "assistant-speaks-first",
+                            model: {
+                                provider: "openai",
+                                model: "gpt-4",
+                                temperature: 0.1
+                            },
+                            voice: {
+                                provider: "vapi",
+                                voiceId: "Clara"
+                            },
+                            recordingEnabled: true,
+                            endCallFunctionEnabled: true,
+                            serverUrl: "https://restovoice.loca.lt/v1/vapi/webhooks/vapi",
+                        },
+                        type: "webCall"
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('connected', '✅ Web call initiated! Check for call interface...');
+                    addTranscript('system', 'Web call started with ID: ' + data.id);
+                    
+                    // Show call interface URL if available
+                    if (data.url) {
+                        addTranscript('system', 'Call interface: ' + data.url);
+                        window.open(data.url, '_blank');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                updateStatus('error', `❌ Manual call failed: ${error.message}`);
+                console.error('Manual call error:', error);
+            }
+        }
+        
+        function endCall() {
+            if (vapiInstance && isCallActive) {
+                vapiInstance.stop();
+                isCallActive = false;
+                updateCallButton();
+            }
+        }
+        
+        async function testWebhook() {
+            updateStatus('connecting', '🧪 Testing webhook directly...');
+            
+            try {
+                const response = await fetch('https://restovoice.loca.lt/v1/vapi/webhooks/vapi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'test',
+                        message: {
+                            type: 'assistant-request',
+                            call: {
+                                id: 'web-test-' + Date.now(),
+                                type: 'webCall'
+                            }
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('connected', '✅ Webhook working! AI config received');
+                    addTranscript('system', 'Webhook test successful');
+                    addTranscript('assistant', data.assistant?.firstMessage || 'AI ready');
+                    console.log('Webhook response:', data);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                updateStatus('error', `❌ Webhook test failed: ${error.message}`);
+                console.error('Webhook test error:', error);
+            }
+        }
+        
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+        
+        function updateCallButton() {
+            const button = document.getElementById('callButton');
+            if (isCallActive) {
+                button.textContent = '📞 End Call';
+                button.style.background = 'linear-gradient(45deg, #f44336, #d32f2f)';
+            } else {
+                button.textContent = '📞 Start Web Call';
+                button.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
+            }
+        }
+        
+        function addTranscript(role, text) {
+            const content = document.getElementById('transcriptContent');
+            const div = document.createElement('div');
+            div.className = role;
+            div.innerHTML = `<strong>${role}:</strong> ${text}`;
+            content.appendChild(div);
+            content.scrollTop = content.scrollHeight;
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            // initVapi(); // REMOVED - function doesn't exist
+        });
+    </script>
+</body>
+</html>

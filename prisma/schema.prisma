@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-py"
+  recursive_type_depth = -1
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- AUTH & ROLES ---
+
+enum UserRole {
+  OWNER
+  STAFF
+}
+
+model User {
+  id                 String       @id // Clerk User ID
+  email              String       @unique
+  name               String?
+  passwordHash       String
+  role               UserRole     @default(OWNER)
+  onboardingComplete Boolean      @default(false)
+  restaurantId       String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  // Relationships
+  restaurant         Restaurant?   @relation(fields: [restaurantId], references: [id])
+  claimedInvites     StaffInvite[] @relation("ClaimedBy")
+}
+
+model StaffInvite {
+  id           String     @id @default(uuid())
+  code         String     @unique
+  restaurantId String
+  email        String?    // Optional: restrict to a specific email
+  expiresAt    DateTime
+  usedAt       DateTime?
+  userId       String?    // The user ID who eventually claimed this code
+  createdAt    DateTime   @default(now())
+
+  // Relationships
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  claimedBy    User?      @relation("ClaimedBy", fields: [userId], references: [id])
+}
+
+// --- RESTAURANT CORE ---
+
+model Restaurant {
+  id              String        @id @default(uuid())
+  name            String
+  phoneNumber     String        @unique
+  vapiAssistantId String?       
+  timezone        String        @default("UTC")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relationships
+  policy          Policy?
+  bookings        Booking[]
+  metrics         DailyMetric[]
+  users           User[]
+  staffInvites    StaffInvite[]
+  callRecords     CallRecord[]
+}
+
+model Policy {
+  id               String        @id @default(uuid())
+  restaurantId     String        @unique
+  depositRequired  Boolean       @default(false)
+  depositAmount    Int?          // Amount in cents
+  maxPartySize     Int           @default(10)
+  
+  // Relationships
+  restaurant       Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  depositRules     DepositRule[]
+  openingHours     OpeningHour[]
+}
+
+model DepositRule {
+  id        String  @id @default(uuid())
+  policyId  String
+  dayOfWeek Int     // 0-6 (Sunday-Saturday)
+  minParty  Int?
+  startTime String? // HH:mm
+  endTime   String? // HH:mm
+
+  policy    Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+model OpeningHour {
+  id        String  @id @default(uuid())
+  policyId  String
+  dayOfWeek Int     // 0-6
+  openTime  String  // HH:mm
+  closeTime String  // HH:mm
+  isClosed  Boolean @default(false)
+
+  policy    Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+// --- BOOKINGS & CALLS ---
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+model Booking {
+  id               String         @id @default(uuid())
+  restaurantId     String
+  customerName     String
+  customerPhone    String
+  partySize        Int
+  bookingTime      DateTime
+  status           BookingStatus  @default(PENDING)
+  stripePaymentId String?
+  externalRefId    String?        // For external POS IDs
+  callConfidence   Float?
+  createdAt        DateTime       @default(now())
+
+  // Relationships
+  restaurant       Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  transcript       CallTranscript?
+}
+
+model CallTranscript {
+  id          String   @id @default(uuid())
+  bookingId   String   @unique
+  transcript  String   @db.Text
+  audioUrl    String?
+  duration    Int?     // in seconds
+  createdAt   DateTime @default(now())
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model CallRecord {
+  id            String   @id @default(uuid())
+  callId        String   @unique
+  customerPhone String
+  restaurantId  String?
+  status        String   @default("initiated") // initiated, started, ended, failed
+  duration      Int?     // in seconds
+  transcript    String?  @db.Text
+  audioUrl      String?
+  assistantId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id])
+}
+
+// --- ANALYTICS ---
+
+model DailyMetric {
+  id                String     @id @default(uuid())
+  restaurantId      String
+  date              DateTime   @db.Date
+  callsTotal        Int        @default(0)
+  bookingsCompleted Int        @default(0)
+  depositsCaptured  Int        @default(0) // In cents
+  handoffsToHuman   Int        @default(0)
+
+  restaurant        Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, date])
+}

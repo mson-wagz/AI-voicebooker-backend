@@ -1,0 +1,28 @@
+{
+  "call_id": "b2b21cc3-02a8-41b7-8b21-e381b28256e6",
+  "restaurant_id": "restaurant_1",
+  "customer_phone": "+1-555-123-4567",
+  "customer_name": null,
+  "booking_request": {
+    "restaurant_name": null,
+    "date": null,
+    "time": null,
+    "party_size": null,
+    "customer_name": null,
+    "customer_phone": null,
+    "special_requests": null,
+    "occasion": null,
+    "dietary_restrictions": null,
+    "preferred_table": null,
+    "high_chair_needed": null,
+    "outdoor_seating": null
+  },
+  "call_status": "completed",
+  "transcript": "\n    Customer: Hi, I'd like to make a reservation for tomorrow evening.\n    Agent: Certainly! How many people will be dining?\n    Customer: There will be 4 of us.\n    Agent: And what time would you prefer?\n    Customer: Around 7 PM would be great.\n    Agent: Perfect. And may I have your name for the reservation?\n    Customer: It's John Smith.\n    Agent: Great! I have a reservation for John Smith, party of 4, tomorrow at 7 PM. \n    Any special occasions or dietary restrictions I should note?\n    Customer: It's actually my wife's birthday, and one of our guests is vegetarian.\n    Agent: Wonderful! I'll note the birthday celebration and ensure vegetarian options are available.\n    Your reservation is confirmed!\n    ",
+  "recording_url": "https://example.com/recording.mp3",
+  "timestamp": "2026-03-17T10:03:18.050775",
+  "processing_status": "pending",
+  "automation_result": null,
+  "retry_count": 0,
+  "priority": "normal"
+}

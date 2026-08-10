@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RestoVoice Web Call Test</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
+    h2 { margin-bottom: 24px; }
+    button { padding: 16px 40px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 8px; }
+    #startBtn { background: #22c55e; color: white; }
+    #stopBtn  { background: #ef4444; color: white; display: none; }
+    #status   { margin-top: 20px; font-size: 14px; color: #555; max-width: 400px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>📞 RestoVoice Web Call Test</h2>
+  <button id="startBtn" onclick="startCall()">Start Call</button>
+  <button id="stopBtn"  onclick="stopCall()">End Call</button>
+  <div id="status">Click "Start Call" to connect to the RestoVoice AI assistant via browser.</div>
+
+  <script>
+    const VAPI_PUBLIC_KEY = "84165de1-a15e-482d-8bd0-f75257dcc31a";
+    const SERVER_URL      = "https://silent-moons-sin.loca.lt/v1/vapi/webhooks/vapi";
+
+    let vapi = null;
+
+    async function loadVapi() {
+      if (vapi) return vapi;
+      const { default: Vapi } = await import("https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js");
+      vapi = new Vapi(VAPI_PUBLIC_KEY);
+
+      vapi.on("call-start",  () => setStatus("🟢 Call connected — speak now!"));
+      vapi.on("call-end",    () => { setStatus("🔴 Call ended."); showStart(); });
+      vapi.on("speech-start",() => setStatus("🎙️ Assistant is speaking..."));
+      vapi.on("speech-end",  () => setStatus("🟢 Your turn — speak now!"));
+      vapi.on("error",  (e)  => setStatus("❌ Error: " + (e?.message || JSON.stringify(e))));
+
+      return vapi;
+    }
+
+    async function startCall() {
+      setStatus("⏳ Connecting...");
+      document.getElementById("startBtn").style.display = "none";
+      document.getElementById("stopBtn").style.display  = "inline-block";
+      try {
+        const v = await loadVapi();
+        await v.start({ serverUrl: SERVER_URL });
+      } catch (e) {
+        setStatus("❌ Failed to start: " + e.message);
+        showStart();
+      }
+    }
+
+    function stopCall() {
+      vapi?.stop();
+      showStart();
+    }
+
+    function showStart() {
+      document.getElementById("startBtn").style.display = "inline-block";
+      document.getElementById("stopBtn").style.display  = "none";
+    }
+
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
+  </script>
+</body>
+</html>

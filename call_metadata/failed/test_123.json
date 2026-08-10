@@ -1,0 +1,22 @@
+{
+  "call_id": "test_123",
+  "restaurant_id": "lartusi",
+  "customer_phone": "+1234567890",
+  "customer_name": null,
+  "booking_request": {
+    "date": "2026-03-30",
+    "time": "23:30",
+    "party_size": 3,
+    "customer_name": "Test User"
+  },
+  "call_status": "pending",
+  "transcript": null,
+  "recording_url": null,
+  "timestamp": "2026-03-29T08:47:07.303449",
+  "processing_status": "failed",
+  "automation_result": null,
+  "retry_count": 1,
+  "priority": "normal",
+  "error": "No results found for '' in ''",
+  "failed_at": "2026-03-30T02:11:20.861413"
+}

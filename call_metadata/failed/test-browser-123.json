@@ -1,0 +1,27 @@
+{
+  "call_id": "test-browser-123",
+  "restaurant_id": "restaurant_1",
+  "customer_phone": "+1-555-123-4567",
+  "customer_name": "John Doe",
+  "booking_request": {
+    "restaurant_name": "Example Restaurant",
+    "date": "2026-03-18",
+    "time": "19:00",
+    "party_size": 4,
+    "customer_name": "John Doe",
+    "customer_phone": "+1-555-123-4567",
+    "special_requests": "Birthday celebration, window table preferred",
+    "occasion": "birthday",
+    "dietary_restrictions": "One vegetarian"
+  },
+  "call_status": "completed",
+  "transcript": "Sample transcript for testing",
+  "recording_url": null,
+  "timestamp": "2026-03-17T09:56:45.454028",
+  "processing_status": "failed",
+  "automation_result": null,
+  "retry_count": 1,
+  "priority": "normal",
+  "error": "'NoneType' object is not callable",
+  "failed_at": "2026-03-27T11:33:19.420946"
+}
