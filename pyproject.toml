@@ -133,3 +133,6 @@ exclude = [
     ".eggs",
     "*.egg",
 ]
+
+[tool.prisma]
+binary_cache_dir = ".prisma-binaries"
